@@ -73,7 +73,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
   const isOverBudget = report.budgetVariance < 0;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Top Controls & Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200">
         <div>

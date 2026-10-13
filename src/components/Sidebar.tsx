@@ -10,7 +10,8 @@ import {
   ChevronRight,
   RotateCcw,
   FileText,
-  FileCheck2
+  FileCheck2,
+  X
 } from 'lucide-react';
 import { useCRM } from '../context/CRMContext';
 
@@ -19,9 +20,16 @@ export type ActiveTab = 'dashboard' | 'gantt' | 'rdo' | 'materials' | 'measureme
 interface SidebarProps {
   currentTab: ActiveTab;
   onSelectTab: (tab: ActiveTab) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  currentTab, 
+  onSelectTab,
+  isMobileOpen = false,
+  onCloseMobile,
+}) => {
   const { projects, activeProjectId, setActiveProjectId, materials, resetToDefaults } = useCRM();
 
   // Count low stock items for badge
@@ -45,24 +53,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-200 border-r border-slate-800 flex flex-col h-screen shrink-0 select-none">
-      {/* Brand Header */}
-      <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-orange-600 flex items-center justify-center text-white shadow-sm">
-            <HardHat className="w-5 h-5" />
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-2xs z-40 lg:hidden transition-opacity"
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 lg:static lg:w-64 bg-slate-900 text-slate-200 border-r border-slate-800 flex flex-col h-screen shrink-0 select-none transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* Brand Header */}
+        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-orange-600 flex items-center justify-center text-white shadow-sm">
+              <HardHat className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+                ObraFlux
+                <span className="text-[10px] font-mono uppercase tracking-wider text-orange-400 bg-orange-950/60 border border-orange-800/60 px-1 py-0.2 rounded">
+                  CRM
+                </span>
+              </h1>
+              <p className="text-xs text-slate-400">Engenharia & Obras</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-              ObraFlux
-              <span className="text-[10px] font-mono uppercase tracking-wider text-orange-400 bg-orange-950/60 border border-orange-800/60 px-1 py-0.2 rounded">
-                CRM
-              </span>
-            </h1>
-            <p className="text-xs text-slate-400">Engenharia & Obras</p>
-          </div>
+
+          {/* Close button for mobile drawer */}
+          <button
+            onClick={onCloseMobile}
+            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800"
+            title="Fechar menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-      </div>
 
       {/* Project Switcher Selector */}
       <div className="p-4 border-b border-slate-800/60">
@@ -98,7 +127,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
           return (
             <button
               key={item.id}
-              onClick={() => onSelectTab(item.id)}
+              onClick={() => {
+                onSelectTab(item.id);
+                if (onCloseMobile) onCloseMobile();
+              }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-orange-600 text-white shadow-sm'
@@ -142,5 +174,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
         </button>
       </div>
     </aside>
+    </>
   );
 };

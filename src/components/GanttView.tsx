@@ -13,7 +13,10 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
-  Check
+  Check,
+  List,
+  BarChart2,
+  Trash2
 } from 'lucide-react';
 import { useCRM } from '../context/CRMContext';
 import { GanttTask, TaskCategory } from '../types/crm';
@@ -25,6 +28,7 @@ interface GanttViewProps {
 export const GanttView: React.FC<GanttViewProps> = ({ onOpenNewTask }) => {
   const { activeProject, ganttTasks, updateTaskProgress, deleteTask, importTasksFromCSV } = useCRM();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'gantt' | 'cards'>('gantt');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importText, setImportText] = useState('');
@@ -209,7 +213,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ onOpenNewTask }) => {
     : 0;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Top Controls & Metrics Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200">
         <div className="flex items-center gap-6 flex-wrap">
@@ -247,8 +251,38 @@ export const GanttView: React.FC<GanttViewProps> = ({ onOpenNewTask }) => {
           </div>
         </div>
 
-        {/* Filter & Import/Export controls */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        {/* Filter & View Mode & Import/Export controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Mode Switcher */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setViewMode('gantt')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewMode === 'gantt'
+                  ? 'bg-white text-orange-600 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Visualizar gráfico Gantt horizontal"
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+              <span>Gantt</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewMode === 'cards'
+                  ? 'bg-white text-orange-600 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Visualizar cartões de etapas (ideal para campo e celular)"
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Cartões</span>
+            </button>
+          </div>
+
           <div className="relative">
             <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <select
@@ -269,20 +303,20 @@ export const GanttView: React.FC<GanttViewProps> = ({ onOpenNewTask }) => {
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors shrink-0"
             title="Exportar cronograma atual para CSV / Excel"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Exportar CSV</span>
+            <span className="hidden sm:inline">Exportar CSV</span>
           </button>
 
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors shrink-0"
             title="Importar etapas a partir de arquivo ou texto CSV"
           >
             <Upload className="w-3.5 h-3.5 text-slate-500" />
-            <span>Importar CSV</span>
+            <span className="hidden sm:inline">Importar CSV</span>
           </button>
 
           <button
@@ -295,8 +329,158 @@ export const GanttView: React.FC<GanttViewProps> = ({ onOpenNewTask }) => {
         </div>
       </div>
 
-      {/* Main Gantt Grid Container */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+      {/* Mobile-Friendly Cards View or Panoramic Gantt Grid */}
+      {viewMode === 'cards' ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span>Listagem de Etapas & Medição Rápida ({filteredTasks.length})</span>
+            <span>Ajuste o avanço físico tocando nos botões de medição</span>
+          </div>
+
+          {filteredTasks.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-xs">
+              Nenhuma etapa encontrada para o filtro selecionado.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              {filteredTasks.map((task) => {
+                const isCompleted = task.progress === 100;
+                const isMilestone = !!task.isMilestone;
+                const isLate = !isCompleted && new Date(task.endDate).getTime() < new Date().getTime();
+
+                return (
+                  <div
+                    key={task.id}
+                    className={`bg-white rounded-xl border p-4 shadow-2xs flex flex-col justify-between transition-all ${
+                      isCompleted 
+                        ? 'border-emerald-200 bg-emerald-50/20' 
+                        : isLate 
+                          ? 'border-amber-200 bg-amber-50/20' 
+                          : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {isMilestone ? (
+                            <div className="w-5 h-5 rotate-45 bg-blue-600 flex items-center justify-center shrink-0 shadow-xs">
+                              <Milestone className="w-3 h-3 text-white -rotate-45" />
+                            </div>
+                          ) : isCompleted ? (
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                          ) : isLate ? (
+                            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                          ) : (
+                            <Clock className="w-5 h-5 text-slate-400 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <h4 className="font-semibold text-xs text-slate-900 truncate">
+                              {task.name}
+                            </h4>
+                            <span className="text-[10px] text-slate-500 font-mono block">
+                              {task.category}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold uppercase tracking-wider shrink-0 ${
+                          isCompleted
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isMilestone
+                              ? 'bg-blue-100 text-blue-800'
+                              : isLate
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {isCompleted ? 'Concluído' : isMilestone ? 'Marco' : isLate ? 'Atrasado' : `${task.progress}%`}
+                        </span>
+                      </div>
+
+                      {/* Dates and Cost */}
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-mono bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Período:</span>
+                          <span className="text-slate-700">{task.startDate} ➔ {task.endDate}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Custo Orçado:</span>
+                          <span className="text-slate-800 font-semibold">
+                            {task.budgetCost > 0 ? `R$ ${task.budgetCost.toLocaleString('pt-BR')}` : 'Sob demanda'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {task.assignedTeam && (
+                        <p className="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                          <span className="font-medium text-slate-600">Equipe:</span> {task.assignedTeam}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Progress Slider & Touch Measurement Quick Buttons */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600 font-medium">Medição Física:</span>
+                        <span className="font-mono font-bold text-orange-600 tabular-nums">
+                          {task.progress}%
+                        </span>
+                      </div>
+
+                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            isCompleted ? 'bg-emerald-600' : isLate ? 'bg-amber-600' : 'bg-orange-600'
+                          }`}
+                          style={{ width: `${task.progress}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => updateTaskProgress(task.id, Math.max(0, task.progress - 10))}
+                          className="flex-1 py-1.5 px-2 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors text-center"
+                        >
+                          -10%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateTaskProgress(task.id, Math.min(100, task.progress + 10))}
+                          className="flex-1 py-1.5 px-2 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors text-center"
+                        >
+                          +10%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateTaskProgress(task.id, 100)}
+                          className="flex-1 py-1.5 px-2 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-center"
+                        >
+                          100%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Deseja remover a etapa "${task.name}"?`)) {
+                              deleteTask(task.id);
+                              showToast('Etapa removida!');
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Remover etapa"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Main Gantt Grid Container */
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
         {/* Info Legend Banner */}
         <div className="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center justify-between text-xs text-slate-600 flex-wrap gap-2">
           <div className="flex items-center gap-4">
@@ -507,6 +691,7 @@ export const GanttView: React.FC<GanttViewProps> = ({ onOpenNewTask }) => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Toast Feedback */}
       {toastMsg && (

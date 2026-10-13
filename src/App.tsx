@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { CRMProvider } from './context/CRMContext';
 import { Sidebar, ActiveTab } from './components/Sidebar';
 import { Header } from './components/Header';
+import { BottomNav } from './components/BottomNav';
 import { DashboardView } from './components/DashboardView';
 import { GanttView } from './components/GanttView';
 import { MaterialsView } from './components/MaterialsView';
@@ -23,6 +24,7 @@ import { PrintReportModal } from './components/PrintReportModal';
 
 function MainLayout() {
   const [currentTab, setCurrentTab] = useState<ActiveTab>('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Modals state
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
@@ -34,14 +36,16 @@ function MainLayout() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (Desktop persistent / Mobile & Tablet off-canvas drawer) */}
       <Sidebar
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Workspace Frame */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Top Bar Header */}
         <Header
           currentTab={currentTab}
@@ -50,10 +54,11 @@ function MainLayout() {
           onOpenNewOrder={() => setIsNewOrderOpen(true)}
           onOpenNewClient={() => setIsNewClientOpen(true)}
           onOpenExportReport={() => setIsPrintReportOpen(true)}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
-        {/* Viewport Content Area */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Viewport Content Area with mobile bottom padding */}
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
           {currentTab === 'dashboard' && (
             <DashboardView
               onNavigateTab={setCurrentTab}
@@ -80,7 +85,7 @@ function MainLayout() {
           )}
 
           {currentTab === 'measurements' && (
-            <div className="p-6">
+            <div className="p-3 sm:p-6">
               <ContractorMeasurementsView />
             </div>
           )}
@@ -99,6 +104,13 @@ function MainLayout() {
             />
           )}
         </main>
+
+        {/* Mobile & Tablet Quick Bottom Navigation Bar */}
+        <BottomNav
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
       </div>
 
       {/* Functional Modals */}
