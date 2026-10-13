@@ -1,0 +1,6 @@
+{
+  "name": "ObraFlux CRM",
+  "description": "CRM especializado em construção civil para gestão de cronograma em Gantt, fluxo de materiais e estoque no canteiro, carteira de clientes e relatórios automáticos de status financeiro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
